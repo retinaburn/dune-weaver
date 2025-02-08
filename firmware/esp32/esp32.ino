@@ -5,15 +5,15 @@
 #define rotInterfaceType AccelStepper::DRIVER
 #define inOutInterfaceType AccelStepper::DRIVER
 
-#define ROT_PIN1 27
-#define ROT_PIN2 26
-#define ROT_PIN3 12
-#define ROT_PIN4 14
+#define ROT_PIN1 1
+#define ROT_PIN2 2
+#define ROT_PIN3 3 //1
+#define ROT_PIN4 4 //2
 
-#define INOUT_PIN1 19
-#define INOUT_PIN2 18
-#define INOUT_PIN3 17
-#define INOUT_PIN4 16
+#define INOUT_PIN1 6
+#define INOUT_PIN2 7
+#define INOUT_PIN3 8
+#define INOUT_PIN4 9
 
 
 #define rot_total_steps 12800
@@ -67,6 +67,9 @@ void setup()
 
     // Initialize serial communication
     Serial.begin(115200);
+    while (!Serial) {
+      ;  // wait for serial port to connect. Needed for native USB port only
+    }
     Serial.println("R");
     homing();
 }
