@@ -76,7 +76,9 @@ mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
 
+print("Connecting to MQTT broker...")
 mqttc.connect("192.168.1.224")
+print("Connected to MQTT broker")
 
 
 def get_ino_firmware_details(ino_file_path):
