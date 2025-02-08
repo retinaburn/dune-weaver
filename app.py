@@ -88,7 +88,7 @@ DELIVERY_METHOD = "mqtt" # or "serial"
 def publish(message, ser=None):
     if DELIVERY_METHOD == "mqtt":
         mqtt.publish(TOPIC, message, qos=2)
-        print(f"Sent: {message.length()}")
+        print(f"Sent: {len(message)} bytes")
     else:
         with serial_lock:
             ser.write(f"{message}\n".encode())
