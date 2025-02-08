@@ -80,12 +80,12 @@ DELIVERY_METHOD = "mqtt" # or "serial"
 #print("Connected to MQTT broker")
 #mqttc.loop_forever()
 
-def publish(command):
+def publish(message):
     if DELIVERY_METHOD == "mqtt":
-        publish.single("sandtable/commands", command, qos=2, hostname="192.168.1.224")
+        publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
     else:
         with serial_lock:
-            ser.write(f"{command}\n".encode())
+            ser.write(f"{message}\n".encode())
 
 def wait_for_ack():
     if DELIVERY_METHOD == "mqtt":
