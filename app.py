@@ -11,7 +11,7 @@ import json
 from datetime import datetime
 import subprocess
 from tqdm import tqdm
-import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
 
 
 app = Flask(__name__)
@@ -82,7 +82,7 @@ def on_message_sent(client, usserdata, msg):
 #print("Connected to MQTT broker")
 #mqttc.loop_forever()
 
-mqtt.publish("sandtable/commands", "Hello World", qos=2, hostname="192.168.1.224")
+publish("sandtable/commands", "Hello World", qos=2, hostname="192.168.1.224")
 
 
 def get_ino_firmware_details(ino_file_path):
