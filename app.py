@@ -77,7 +77,7 @@ mqttc.on_connect = on_connect
 mqttc.on_message = on_message
 
 print("Connecting to MQTT broker...")
-mqttc.connect("192.168.1.224")
+mqttc.connect("192.168.1.224", 1883)
 print("Connected to MQTT broker")
 
 
