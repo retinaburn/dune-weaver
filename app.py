@@ -82,7 +82,7 @@ def on_message_sent(client, usserdata, msg):
 #print("Connected to MQTT broker")
 #mqttc.loop_forever()
 
-publish("sandtable/commands", "Hello World", qos=2, hostname="192.168.1.224")
+publish.single("sandtable/commands", "Hello World", qos=2, hostname="192.168.1.224")
 
 
 def get_ino_firmware_details(ino_file_path):
