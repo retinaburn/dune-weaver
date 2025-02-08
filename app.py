@@ -14,7 +14,7 @@ from tqdm import tqdm
 from flask_mqtt import Mqtt
 
 app = Flask(__name__)
-app.config['MQTT_BROKER_URL'] = '192.168.1.124'
+app.config['MQTT_BROKER_URL'] = '192.168.1.224'
 app.config['MQTT_KEEPALIVE'] = 5
 mqtt = Mqtt(app)
 
