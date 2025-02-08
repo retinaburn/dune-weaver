@@ -11,10 +11,13 @@ import json
 from datetime import datetime
 import subprocess
 from tqdm import tqdm
-import paho.mqtt.publish as publish
-
+from flask_mqtt import Mqtt
 
 app = Flask(__name__)
+app.config['MQTT_BROKER_URL'] = '192.168.1.124'
+app.config['MQTT_KEEPALIVE'] = 5
+mqtt = Mqtt(app)
+
 
 # Configuration
 THETA_RHO_DIR = './patterns'
@@ -80,9 +83,9 @@ DELIVERY_METHOD = "mqtt" # or "serial"
 #print("Connected to MQTT broker")
 #mqttc.loop_forever()
 
-def publish(message):
+def publish(message, ser=None):
     if DELIVERY_METHOD == "mqtt":
-        publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
+        mqtt.publish("sandtable/commands", message, qos=2, hostname="192.168.1.224")
     else:
         with serial_lock:
             ser.write(f"{message}\n".encode())
@@ -311,7 +314,7 @@ def parse_theta_rho_file(file_path):
 def send_coordinate_batch(ser, coordinates):
     """Send a batch of theta-rho pairs to the Arduino."""
     batch_str = ";".join(f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates) + ";\n"
-    publish(batch_str)
+    publish(batch_str, ser)
 
 def send_command(command):
     """Send a single command to the Arduino."""    
