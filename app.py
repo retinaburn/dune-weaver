@@ -85,7 +85,7 @@ DELIVERY_METHOD = "mqtt" # or "serial"
 
 def publish(message, ser=None):
     if DELIVERY_METHOD == "mqtt":
-        mqtt.publish("sandtable/commands", message, qos=2, hostname="192.168.1.224")
+        mqtt.publish("sandtable/commands", message, qos=2)
     else:
         with serial_lock:
             ser.write(f"{message}\n".encode())
