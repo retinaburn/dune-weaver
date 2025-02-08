@@ -72,7 +72,7 @@ def on_message(client, userdata, msg):
 
 
 
-mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION5)
+mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 mqttc.on_connect = on_connect
 mqttc.on_message = on_message
 
