@@ -423,31 +423,32 @@ def run_theta_rho_file(file_path, schedule_hours=None):
 
                 while True:
                     schedule_checker(schedule_hours)  # Check if within schedule
-                    if ser.in_waiting > 0:
-                        response = ser.readline().decode().strip()
-                        if response == "R":
-                            send_coordinate_batch(ser, batch)
-                            pbar.update(batch_size)  # Update tqdm progress
+                    if ser:
+                        if ser.in_waiting > 0:
+                            response = ser.readline().decode().strip()
+                            if response == "R":
+                                send_coordinate_batch(ser, batch)
+                                pbar.update(batch_size)  # Update tqdm progress
 
-                            # Use tqdm's built-in ETA tracking
-                            estimated_remaining_time = pbar.format_dict['elapsed'] / (i + batch_size) * (total_coordinates - (i + batch_size))
+                                # Use tqdm's built-in ETA tracking
+                                estimated_remaining_time = pbar.format_dict['elapsed'] / (i + batch_size) * (total_coordinates - (i + batch_size))
 
-                            # Update execution progress with formatted ETA
-                            execution_progress = (i + batch_size, total_coordinates, estimated_remaining_time)
-                            break
-                        elif response != "IGNORED: FINISHED" and response.startswith("IGNORE"):  # Retry the previous batch
-                            print("Received IGNORE. Resending the previous batch...")
-                            print(response)
-                            # Calculate the previous batch indices
-                            prev_start = max(0, i - batch_size)  # Ensure we don't go below 0
-                            prev_end = i  # End of the previous batch is `i`
-                            previous_batch = coordinates[prev_start:prev_end]
+                                # Update execution progress with formatted ETA
+                                execution_progress = (i + batch_size, total_coordinates, estimated_remaining_time)
+                                break
+                            elif response != "IGNORED: FINISHED" and response.startswith("IGNORE"):  # Retry the previous batch
+                                print("Received IGNORE. Resending the previous batch...")
+                                print(response)
+                                # Calculate the previous batch indices
+                                prev_start = max(0, i - batch_size)  # Ensure we don't go below 0
+                                prev_end = i  # End of the previous batch is `i`
+                                previous_batch = coordinates[prev_start:prev_end]
 
-                            # Resend the previous batch
-                            send_coordinate_batch(ser, previous_batch)
-                            break  # Exit the retry loop after resending
-                        else:
-                            print(f"Arduino response: {response}")
+                                # Resend the previous batch
+                                send_coordinate_batch(ser, previous_batch)
+                                break  # Exit the retry loop after resending
+                            else:
+                                print(f"Arduino response: {response}")
 
         reset_theta()
         publish("FINISHED\n")
