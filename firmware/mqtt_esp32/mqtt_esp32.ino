@@ -5,7 +5,7 @@
 #include <MQTT.h>
 
 const char ssid[] = "MOYNES";
-const char pass[] = "good4bart";
+const char pass[] = "moynes123";
 WiFiClient net;
 MQTTClient client(256);
 
