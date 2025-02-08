@@ -102,6 +102,19 @@ def wait_for_ack():
                     if response == "R":
                         print("Command execution completed.")
                     return response
+def wait_for_reset():
+    if DELIVERY_METHOD == "mqtt":
+        return "THETA_RESET"
+    else:
+        while True:
+            with serial_lock:
+                if ser.in_waiting > 0:
+                    response = ser.readline().decode().strip()
+                    print(f"Arduino response: {response}")
+                    if response == "R":
+                        print("Command execution completed.")
+                    return response                
+            time.sleep(0.5)
     
 def publish_list(messages):
     for message in messages:
@@ -559,17 +572,10 @@ def run_theta_rho_files(
 
 def reset_theta():
     """Reset theta on the Arduino."""
-    with serial_lock:
-        ser.write("RESET_THETA\n".encode())
-        while True:
-            with serial_lock:
-                if ser.in_waiting > 0:
-                    response = ser.readline().decode().strip()
-                    print(f"Arduino response: {response}")
-                    if response == "THETA_RESET":
-                        print("Theta successfully reset.")
-                        break
-            time.sleep(0.5)  # Small delay to avoid busy waiting
+    response = wait_for_reset()
+    print(f"Arduino response: {response}")
+    if response == "THETA_RESET":
+        print("Theta successfully reset.")
 
 
 
