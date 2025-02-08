@@ -91,6 +91,7 @@ def publish(message, ser=None):
     else:
         with serial_lock:
             ser.write(f"{message}\n".encode())
+    print(f"Sent: {"message\n".encode().__len__}")
 
 def wait_for_ack():
     if DELIVERY_METHOD == "mqtt":
@@ -329,10 +330,11 @@ def parse_theta_rho_file(file_path):
 
 def send_coordinate_batch(ser, coordinates):
     """Send a batch of theta-rho pairs to the Arduino."""
-    #batch_str = ";".join(f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates) + ";\n"
-    #publish(batch_str, ser)
-    for theta, rho in coordinates:
-        publish(f"{theta:.5f},{rho:.5f}\n")
+    batch_str = ";".join(f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates) + ";\n"
+    publish(batch_str, ser)
+
+    #for theta, rho in coordinates:
+    #    publish(f"{theta:.5f},{rho:.5f}\n")
 
 def send_command(command):
     """Send a single command to the Arduino."""    
