@@ -91,7 +91,7 @@ def publish(message, ser=None):
     else:
         with serial_lock:
             ser.write(f"{message}\n".encode())
-    print(f"Sent: {"message\n".encode().__len__}")
+    print("Sent: " + "message\n".encode().__len__())
 
 def wait_for_ack():
     if DELIVERY_METHOD == "mqtt":
