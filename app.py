@@ -13,6 +13,8 @@ import subprocess
 from tqdm import tqdm
 from flask_mqtt import Mqtt
 
+TOPIC = "sandtable/commands"
+
 app = Flask(__name__)
 app.config['MQTT_BROKER_URL'] = '192.168.1.224'
 app.config['MQTT_KEEPALIVE'] = 5
@@ -67,7 +69,7 @@ if not os.path.exists(PLAYLISTS_FILE):
 
 def on_connect(client, userdata, flags, rc, properties):
     print(f"Connected with result code {rc}")
-    client.subscribe("sandtable/commands")
+    client.subscribe(TOPIC)
 
 def on_message(client, userdata, msg):
     print(f"{msg.topic}: {msg.payload}")
@@ -85,7 +87,7 @@ DELIVERY_METHOD = "mqtt" # or "serial"
 
 def publish(message, ser=None):
     if DELIVERY_METHOD == "mqtt":
-        mqtt.publish("sandtable/commands", message, qos=2)
+        mqtt.publish(TOPIC, message, qos=2)
     else:
         with serial_lock:
             ser.write(f"{message}\n".encode())
@@ -118,7 +120,7 @@ def wait_for_reset():
     
 def publish_list(messages):
     for message in messages:
-        publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
+        publish.single(TOPIC, message, qos=2, hostname="192.168.1.224")
 
 def get_ino_firmware_details(ino_file_path):
     """
