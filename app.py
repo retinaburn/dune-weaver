@@ -44,7 +44,6 @@ firmware_version = 'Unknown'
 current_playing_index = None
 current_playlist = None
 is_clearing = False
-
 serial_lock = threading.RLock()
 
 PLAYLISTS_FILE = os.path.join(os.getcwd(), "playlists.json")
@@ -70,6 +69,8 @@ def on_connect(client, userdata, flags, rc, properties):
 def on_message(client, userdata, msg):
     print(f"{msg.topic}: {msg.payload}")
 
+DELIVERY_METHOD = "mqtt" # or "serial"
+
 #mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 #mqttc.on_connect = on_connect
 #mqttc.on_message = on_message
@@ -79,9 +80,25 @@ def on_message(client, userdata, msg):
 #print("Connected to MQTT broker")
 #mqttc.loop_forever()
 
-def publish(message):
-    publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
+def publish(command):
+    if DELIVERY_METHOD == "mqtt":
+        publish.single("sandtable/commands", command, qos=2, hostname="192.168.1.224")
+    else:
+        with serial_lock:
+            ser.write(f"{command}\n".encode())
 
+def wait_for_ack():
+    if DELIVERY_METHOD == "mqtt":
+        return
+    else:
+        while True:
+            with serial_lock:
+                if ser.in_waiting > 0:
+                    response = ser.readline().decode().strip()
+                    print(f"Arduino response: {response}")
+                    if response == "R":
+                        print("Command execution completed.")
+    
 def publish_list(messages):
     for message in messages:
         publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
@@ -293,28 +310,23 @@ def parse_theta_rho_file(file_path):
 
 def send_coordinate_batch(ser, coordinates):
     """Send a batch of theta-rho pairs to the Arduino."""
-    # print("Sending batch:", coordinates)
     batch_str = ";".join(f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates) + ";\n"
-    with serial_lock:
-        ser.write(batch_str.encode())
-    publish_list([f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates])
+    publish(batch_str)
 
 def send_command(command):
-    """Send a single command to the Arduino."""
-    with serial_lock:
-        ser.write(f"{command}\n".encode())
-        print(f"Sent: {command}")
-        publish(command)
+    """Send a single command to the Arduino."""    
+    publish(command)
+    print(f"Sent: {command}")
 
-        # Wait for "R" acknowledgment from Arduino
-        while True:
-            with serial_lock:
-                if ser.in_waiting > 0:
-                    response = ser.readline().decode().strip()
-                    print(f"Arduino response: {response}")
-                    if response == "R":
-                        print("Command execution completed.")
-                        break
+    # Wait for "R" acknowledgment from Arduino
+    while True:
+        with serial_lock:
+            if ser.in_waiting > 0:
+                response = ser.readline().decode().strip()
+                print(f"Arduino response: {response}")
+                if response == "R":
+                    print("Command execution completed.")
+                    break
 
 def wait_for_start_time(schedule_hours):
     """
@@ -435,7 +447,7 @@ def run_theta_rho_file(file_path, schedule_hours=None):
                             print(f"Arduino response: {response}")
 
         reset_theta()
-        ser.write("FINISHED\n".encode())
+        publish("FINISHED\n")
 
     # Clear tracking variables when done
     current_playing_file = None
@@ -538,8 +550,7 @@ def run_theta_rho_files(
 
     # Reset theta after execution or stopping
     reset_theta()
-    with serial_lock:
-        ser.write("FINISHED\n".encode())
+    publish("FINISHED\n")
         
     print("All requested patterns completed (or stopped).")
 
