@@ -11,6 +11,8 @@ import json
 from datetime import datetime
 import subprocess
 from tqdm import tqdm
+import paho.mqtt.client as mqtt
+
 
 app = Flask(__name__)
 
@@ -54,10 +56,28 @@ MOTOR_TYPE_MAPPING = {
     "esp32_TMC2209": "./firmware/esp32_TMC2209/esp32_TMC2209.ino"
 }
 
+
 # Ensure the file exists and contains at least an empty JSON object
 if not os.path.exists(PLAYLISTS_FILE):
     with open(PLAYLISTS_FILE, "w") as f:
         json.dump({}, f, indent=2)
+
+
+def on_connect(client, userdata, flags, rc, properties):
+    print(f"Connected with result code {rc}")
+    client.subscribe("sandtable/commands")
+
+def on_message(client, userdata, msg):
+    print(f"{msg.topic}: {msg.payload}")
+
+
+
+mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION5)
+mqttc.on_connect = on_connect
+mqttc.on_message = on_message
+
+mqttc.connect("192.168.1.224")
+
 
 def get_ino_firmware_details(ino_file_path):
     """
@@ -527,6 +547,8 @@ def reset_theta():
                         print("Theta successfully reset.")
                         break
             time.sleep(0.5)  # Small delay to avoid busy waiting
+
+
 
 # Flask API Endpoints
 @app.route('/')
