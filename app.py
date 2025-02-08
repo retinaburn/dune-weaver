@@ -70,9 +70,6 @@ def on_connect(client, userdata, flags, rc, properties):
 def on_message(client, userdata, msg):
     print(f"{msg.topic}: {msg.payload}")
 
-def on_message_sent(client, usserdata, msg):
-    print(f"{msg.topic}: {msg.payload}")
-
 #mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
 #mqttc.on_connect = on_connect
 #mqttc.on_message = on_message
@@ -82,8 +79,12 @@ def on_message_sent(client, usserdata, msg):
 #print("Connected to MQTT broker")
 #mqttc.loop_forever()
 
-publish.single("sandtable/commands", "Hello World", qos=2, hostname="192.168.1.224")
+def publish(message):
+    publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
 
+def publish_list(messages):
+    for message in messages:
+        publish.single("sandtable/commands", message, qos=2, hostname="192.168.1.224")
 
 def get_ino_firmware_details(ino_file_path):
     """
@@ -296,12 +297,14 @@ def send_coordinate_batch(ser, coordinates):
     batch_str = ";".join(f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates) + ";\n"
     with serial_lock:
         ser.write(batch_str.encode())
+    publish_list([f"{theta:.5f},{rho:.5f}" for theta, rho in coordinates])
 
 def send_command(command):
     """Send a single command to the Arduino."""
     with serial_lock:
         ser.write(f"{command}\n".encode())
         print(f"Sent: {command}")
+        publish(command)
 
         # Wait for "R" acknowledgment from Arduino
         while True:
