@@ -70,16 +70,19 @@ def on_connect(client, userdata, flags, rc, properties):
 def on_message(client, userdata, msg):
     print(f"{msg.topic}: {msg.payload}")
 
+def on_message_sent(client, usserdata, msg):
+    print(f"{msg.topic}: {msg.payload}")
 
+#mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+#mqttc.on_connect = on_connect
+#mqttc.on_message = on_message
 
-mqttc = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
-mqttc.on_connect = on_connect
-mqttc.on_message = on_message
+#print("Connecting to MQTT broker...")
+#mqttc.connect("192.168.1.224")
+#print("Connected to MQTT broker")
+#mqttc.loop_forever()
 
-print("Connecting to MQTT broker...")
-mqttc.connect("192.168.1.224")
-print("Connected to MQTT broker")
-mqttc.loop_forever()
+mqtt.publish("sandtable/commands", "Hello World", qos=2, hostname="192.168.1.224")
 
 
 def get_ino_firmware_details(ino_file_path):
