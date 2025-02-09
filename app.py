@@ -346,7 +346,9 @@ def send_command(command):
     print("Waiting for response....")
     # Wait for "R" acknowledgment from Arduino
     while True:
+        print("Waiting for ack")
         response = wait_for_ack()        
+        print("Got ack")
         print(f"Arduino response: {response}")
         if response == "R":
             print("Command execution completed.")
