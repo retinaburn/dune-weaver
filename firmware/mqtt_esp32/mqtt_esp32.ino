@@ -4,8 +4,9 @@
 #include <WiFi.h>
 #include <MQTT.h>
 
-const char ssid[] = "MOYNES";
-const char pass[] = "moynes123";
+const char ssid[] = "SANDDUNE";
+const char pass[] = "good4bart";
+const char IP_ADDRESS[] = "10.42.0.1";
 WiFiClient net;
 MQTTClient client(256);
 
@@ -120,7 +121,7 @@ void setup()
   // Initialize serial communication
   WiFi.begin(ssid, pass);
   IPAddress ip;
-  ip.fromString("192.168.1.224");
+  ip.fromString(IP_ADDRESS);
   client.begin(ip, net);
   //client.onMessage(messageReceived);
   client.onMessageAdvanced(messageReceivedBytes);
