@@ -7,6 +7,9 @@
 const char ssid[] = "SANDDUNE";
 const char pass[] = "good4bart";
 const char IP_ADDRESS[] = "10.42.0.1";
+const char TOPIC_IN[] = "sandtable/commands";
+const char TOPIC_OUT[] = "sandtable/response";
+
 WiFiClient net;
 MQTTClient client(256);
 
@@ -57,14 +60,6 @@ double subSteps = 1;
 const char* firmwareVersion = "1.4.0";
 const char* motorType = "esp32";
 
-// void setup(){
-//     Serial.begin(115200);
-//     while (!Serial) {
-//       ;  // wait for serial port to connect. Needed for native USB port only
-//     }
-//     Serial.println("R");
-// }
-
 int modulus(int x, int y) {
   return x < 0 ? ((x + 1) % y) + y - 1 : x % y;
 }
@@ -82,7 +77,7 @@ void connect(){
     delay(1000);
   }
 
-  bool isConnected = client.subscribe("sandtable/commands");
+  bool isConnected = client.subscribe(TOPIC_IN);
   Serial.print("connected? ");
   Serial.println(isConnected);
   Serial.print("isSession? ");
@@ -123,8 +118,8 @@ void setup()
   IPAddress ip;
   ip.fromString(IP_ADDRESS);
   client.begin(ip, net);
-  //client.onMessage(messageReceived);
-  client.onMessageAdvanced(messageReceivedBytes);
+  client.onMessage(messageReceived);
+  //client.onMessageAdvanced(messageReceivedBytes);
   client.setKeepAlive(5);
   client.setCleanSession(false);
   client.dropOverflow(true);
@@ -159,311 +154,174 @@ void messageReceivedBytes(MQTTClient *client, char topic[], char bytes[], int le
 
 void messageReceived(String &topic, String &payload)
 {
+    payload.trim();
     Serial.println("incoming: " + topic + ": " + payload + "<EOM>");
 
+    String input = payload;
 
-//     String input = payload;
+    // Ignore invalid messages
+    if (input != "HOME" && input != "RESET_THETA"  && input != "GET_VERSION" && !input.startsWith("SET_SPEED") && !input.endsWith(";"))
+    {
+        Serial.println("IGNORED");
+        return;
+    }
 
-//     // Ignore invalid messages
-//     if (input != "HOME" && input != "RESET_THETA"  && input != "GET_VERSION" && !input.startsWith("SET_SPEED") && !input.endsWith(";"))
-//     {
-//         Serial.println("IGNORED");
-//         return;
-//     }
+    if (input == "GET_VERSION") {
+        getVersion();
+    }
 
-//     if (input == "GET_VERSION") {
-//         getVersion();
-//     }
+    // Example: The user calls "SET_SPEED 60" => 60% of maxSpeed
+    if (input.startsWith("SET_SPEED"))
+    {
+        // Parse out the speed value from the command string
+        int spaceIndex = input.indexOf(' ');
+        if (spaceIndex != -1)
+        {
+            String speedStr = input.substring(spaceIndex + 1);
+            float speedPercentage = speedStr.toFloat();
 
-//     // Example: The user calls "SET_SPEED 60" => 60% of maxSpeed
-//     if (input.startsWith("SET_SPEED"))
-//     {
-//         // Parse out the speed value from the command string
-//         int spaceIndex = input.indexOf(' ');
-//         if (spaceIndex != -1)
-//         {
-//             String speedStr = input.substring(spaceIndex + 1);
-//             float speedPercentage = speedStr.toFloat();
+            // Make sure the percentage is valid
+            if (speedPercentage >= 1.0 && speedPercentage <= 100.0)
+            {
+                // Convert percentage to actual speed
+                long newSpeed = (speedPercentage / 100.0) * maxSpeed;
 
-//             // Make sure the percentage is valid
-//             if (speedPercentage >= 1.0 && speedPercentage <= 100.0)
-//             {
-//                 // Convert percentage to actual speed
-//                 long newSpeed = (speedPercentage / 100.0) * maxSpeed;
+                // Set the stepper speeds
+                rotStepper.setMaxSpeed(newSpeed);
+                inOutStepper.setMaxSpeed(newSpeed);
 
-//                 // Set the stepper speeds
-//                 rotStepper.setMaxSpeed(newSpeed);
-//                 inOutStepper.setMaxSpeed(newSpeed);
+                Serial.println("SPEED_SET");  
+            }
+            else
+            {
+                Serial.println("INVALID_SPEED");
+            }
+        }
+        else
+        {
+            Serial.println("INVALID_COMMAND");
+        }
+        return;
+    }
 
-//                 Serial.println("SPEED_SET");  
-//             }
-//             else
-//             {
-//                 Serial.println("INVALID_SPEED");
-//             }
-//         }
-//         else
-//         {
-//             Serial.println("INVALID_COMMAND");
-//         }
-//         return;
-//     }
+    if (input == "HOME")
+    {
+        homing();
+        return;
+    }
 
-//     if (input == "HOME")
-//     {
-//         homing();
-//         return;
-//     }
-
-//     if (input == "RESET_THETA")
-//     {
-//         isFirstCoordinates = true;
-//         currentTheta = 0;
-//         currentRho = 0;
-//         Serial.println("THETA_RESET"); // Notify Python
-//         Serial.println("R");
-//         return;
-//     }
+    if (input == "RESET_THETA")
+    {
+        isFirstCoordinates = true;
+        currentTheta = 0;
+        currentRho = 0;
+        Serial.println("THETA_RESET"); // Notify Python
+        Serial.println("R");
+        return;
+    }
 
 
-//     // If not a command, assume it's a batch of theta-rho pairs
-//     if (!batchComplete)
-//     {
-//         int pairIndex = 0;
-//         int startIdx = 0;
+    // If not a command, assume it's a batch of theta-rho pairs
+    if (!batchComplete)
+    {
+        int pairIndex = 0;
+        int startIdx = 0;
 
-//         // Split the batch line into individual theta-rho pairs
-//         while (pairIndex < BUFFER_SIZE)
-//         {
-//             int endIdx = input.indexOf(";", startIdx);
-//             if (endIdx == -1)
-//                 break; // No more pairs in the line
+        // Split the batch line into individual theta-rho pairs
+        while (pairIndex < BUFFER_SIZE)
+        {
+            int endIdx = input.indexOf(";", startIdx);
+            if (endIdx == -1)
+                break; // No more pairs in the line
 
-//             String pair = input.substring(startIdx, endIdx);
-//             int commaIndex = pair.indexOf(',');
+            String pair = input.substring(startIdx, endIdx);
+            int commaIndex = pair.indexOf(',');
 
-//             // Parse theta and rho values
-//             double theta = pair.substring(0, commaIndex).toDouble(); // Theta in radians
-//             double rho = pair.substring(commaIndex + 1).toDouble();  // Rho (0 to 1)
+            // Parse theta and rho values
+            double theta = pair.substring(0, commaIndex).toDouble(); // Theta in radians
+            double rho = pair.substring(commaIndex + 1).toDouble();  // Rho (0 to 1)
 
-//             buffer[pairIndex][0] = theta;
-//             buffer[pairIndex][1] = rho;
-//             pairIndex++;
+            buffer[pairIndex][0] = theta;
+            buffer[pairIndex][1] = rho;
+            pairIndex++;
 
-//             startIdx = endIdx + 1; // Move to next pair
-//         }
-//         bufferCount = pairIndex;
-//         batchComplete = true;
-//     }
+            startIdx = endIdx + 1; // Move to next pair
+        }
+        bufferCount = pairIndex;
+        batchComplete = true;
+    }
 
-//     // Process the buffer if a batch is ready
-//     if (batchComplete && bufferCount > 0)
-//     {
-//         rotStepper.enableOutputs();
-//         inOutStepper.enableOutputs();
-//         // Start interpolation from the current position
-//         double startTheta = currentTheta;
-//         double startRho = currentRho;
+    // Process the buffer if a batch is ready
+    if (batchComplete && bufferCount > 0)
+    {
+        rotStepper.enableOutputs();
+        inOutStepper.enableOutputs();
+        // Start interpolation from the current position
+        double startTheta = currentTheta;
+        double startRho = currentRho;
 
-//         for (int i = 0; i < bufferCount; i++)
-//         {
+        for (int i = 0; i < bufferCount; i++)
+        {
  
-//             if (isFirstCoordinates)
-//             {
-//                 // Directly move to the first coordinate of the new pattern
-//                 long initialRotSteps = buffer[0][0] * (rot_total_steps / (2.0 * M_PI));
+            if (isFirstCoordinates)
+            {
+                // Directly move to the first coordinate of the new pattern
+                long initialRotSteps = buffer[0][0] * (rot_total_steps / (2.0 * M_PI));
 //                 rotStepper.setCurrentPosition(initialRotSteps);
 //                 inOutStepper.setCurrentPosition(inOutStepper.currentPosition() + (totalRevolutions * rot_total_steps / gearRatio));
 
-//                 currentTheta = buffer[0][0];
-//                 totalRevolutions = 0;
-//                 movePolar(buffer[0][0], buffer[0][1]);
-//                 isFirstCoordinates = false; // Reset the flag after the first movement
-//             } else
-//             {
-//                 interpolatePath(
-//                     startTheta, startRho,
-//                     buffer[i][0], buffer[i][1],
-//                     subSteps
-//                 );
-//             }
-//             // Update the starting point for the next segment
-//             startTheta = buffer[i][0];
-//             startRho = buffer[i][1];
-//         }
+                currentTheta = buffer[0][0];
+                totalRevolutions = 0;
+                // movePolar(buffer[0][0], buffer[0][1]);
+                isFirstCoordinates = false; // Reset the flag after the first movement
+            } else
+            {
+                interpolatePath(
+                    startTheta, startRho,
+                    buffer[i][0], buffer[i][1],
+                    subSteps
+                );
+            }
+            // Update the starting point for the next segment
+            startTheta = buffer[i][0];
+            startRho = buffer[i][1];
+        }
 
 //         rotStepper.disableOutputs();
 //         inOutStepper.disableOutputs();
-//         batchComplete = false; // Reset batch flag
-//         bufferCount = 0;       // Clear buffer
-//         Serial.println("R");
-//     }
+        batchComplete = false; // Reset batch flag
+        bufferCount = 0;       // Clear buffer
+        Serial.println("Bad R");
+        send_and_log("R");
+    }
 }
 
-// void serial_loop()
-// {
-//     // Check for incoming serial commands or theta-rho pairs
-//     if (Serial.available() > 0)
-//     {
-//         String input = Serial.readStringUntil('\n');
+void send_and_log(char message[]){
+  Serial.println(message);
+  client.publish(TOPIC_OUT, message);
+}
 
-//         // Ignore invalid messages
-//         if (input != "HOME" && input != "RESET_THETA"  && input != "GET_VERSION" && !input.startsWith("SET_SPEED") && !input.endsWith(";"))
-//         {
-//             Serial.println("IGNORED");
-//             return;
-//         }
-
-//         if (input == "GET_VERSION") {
-//             getVersion();
-//         }
-
-//         // Example: The user calls "SET_SPEED 60" => 60% of maxSpeed
-//         if (input.startsWith("SET_SPEED"))
-//         {
-//             // Parse out the speed value from the command string
-//             int spaceIndex = input.indexOf(' ');
-//             if (spaceIndex != -1)
-//             {
-//                 String speedStr = input.substring(spaceIndex + 1);
-//                 float speedPercentage = speedStr.toFloat();
-
-//                 // Make sure the percentage is valid
-//                 if (speedPercentage >= 1.0 && speedPercentage <= 100.0)
-//                 {
-//                     // Convert percentage to actual speed
-//                     long newSpeed = (speedPercentage / 100.0) * maxSpeed;
-
-//                     // Set the stepper speeds
-//                     rotStepper.setMaxSpeed(newSpeed);
-//                     inOutStepper.setMaxSpeed(newSpeed);
-
-//                     Serial.println("SPEED_SET");  
-//                 }
-//                 else
-//                 {
-//                     Serial.println("INVALID_SPEED");
-//                 }
-//             }
-//             else
-//             {
-//                 Serial.println("INVALID_COMMAND");
-//             }
-//             return;
-//         }
-
-//         if (input == "HOME")
-//         {
-//             homing();
-//             return;
-//         }
-
-//         if (input == "RESET_THETA")
-//         {
-//             isFirstCoordinates = true;
-//             currentTheta = 0;
-//             currentRho = 0;
-//             Serial.println("THETA_RESET"); // Notify Python
-//             Serial.println("R");
-//             return;
-//         }
-
-
-//         // If not a command, assume it's a batch of theta-rho pairs
-//         if (!batchComplete)
-//         {
-//             int pairIndex = 0;
-//             int startIdx = 0;
-
-//             // Split the batch line into individual theta-rho pairs
-//             while (pairIndex < BUFFER_SIZE)
-//             {
-//                 int endIdx = input.indexOf(";", startIdx);
-//                 if (endIdx == -1)
-//                     break; // No more pairs in the line
-
-//                 String pair = input.substring(startIdx, endIdx);
-//                 int commaIndex = pair.indexOf(',');
-
-//                 // Parse theta and rho values
-//                 double theta = pair.substring(0, commaIndex).toDouble(); // Theta in radians
-//                 double rho = pair.substring(commaIndex + 1).toDouble();  // Rho (0 to 1)
-
-//                 buffer[pairIndex][0] = theta;
-//                 buffer[pairIndex][1] = rho;
-//                 pairIndex++;
-
-//                 startIdx = endIdx + 1; // Move to next pair
-//             }
-//             bufferCount = pairIndex;
-//             batchComplete = true;
-//         }
-//     }
-
-//     // Process the buffer if a batch is ready
-//     if (batchComplete && bufferCount > 0)
-//     {
-//         rotStepper.enableOutputs();
-//         inOutStepper.enableOutputs();
-//         // Start interpolation from the current position
-//         double startTheta = currentTheta;
-//         double startRho = currentRho;
-
-//         for (int i = 0; i < bufferCount; i++)
-//         {
- 
-//             if (isFirstCoordinates)
-//             {
-//                 // Directly move to the first coordinate of the new pattern
-//                 long initialRotSteps = buffer[0][0] * (rot_total_steps / (2.0 * M_PI));
-//                 rotStepper.setCurrentPosition(initialRotSteps);
-//                 inOutStepper.setCurrentPosition(inOutStepper.currentPosition() + (totalRevolutions * rot_total_steps / gearRatio));
-
-//                 currentTheta = buffer[0][0];
-//                 totalRevolutions = 0;
-//                 movePolar(buffer[0][0], buffer[0][1]);
-//                 isFirstCoordinates = false; // Reset the flag after the first movement
-//             } else
-//             {
-//                 interpolatePath(
-//                     startTheta, startRho,
-//                     buffer[i][0], buffer[i][1],
-//                     subSteps
-//                 );
-//             }
-//             // Update the starting point for the next segment
-//             startTheta = buffer[i][0];
-//             startRho = buffer[i][1];
-//         }
-
-//         rotStepper.disableOutputs();
-//         inOutStepper.disableOutputs();
-//         batchComplete = false; // Reset batch flag
-//         bufferCount = 0;       // Clear buffer
-//         Serial.println("R");
-//     }
-// }
 
 void homing()
 {
     Serial.println("HOMING");
-    inOutStepper.enableOutputs();
-    // Move inOutStepper inward for homing
-    inOutStepper.setSpeed(-maxSpeed); // Adjust speed for homing
-    long currentInOut = inOutStepper.currentPosition();
-    while (true)
-    {
-        inOutStepper.runSpeed();
-        if (inOutStepper.currentPosition() <= currentInOut - inOut_total_steps * 1.1)
-        { // Adjust distance for homing
-            break;
-        }
-    }
-    inOutStepper.setCurrentPosition(0); // Set home position
-    rotStepper.setCurrentPosition(0);
-    currentTheta = 0.0;                 // Reset polar coordinates
-    currentRho = 0.0;
-    inOutStepper.disableOutputs();
+    // inOutStepper.enableOutputs();
+    // // Move inOutStepper inward for homing
+    // inOutStepper.setSpeed(-maxSpeed); // Adjust speed for homing
+    // long currentInOut = inOutStepper.currentPosition();
+    // while (true)
+    // {
+    //     inOutStepper.runSpeed();
+    //     if (inOutStepper.currentPosition() <= currentInOut - inOut_total_steps * 1.1)
+    //     { // Adjust distance for homing
+    //         break;
+    //     }
+    // }
+    // inOutStepper.setCurrentPosition(0); // Set home position
+    // rotStepper.setCurrentPosition(0);
+    // currentTheta = 0.0;                 // Reset polar coordinates
+    // currentRho = 0.0;
+    // inOutStepper.disableOutputs();
     Serial.println("HOMED");
 }
 
@@ -485,8 +343,8 @@ void movePolar(double theta, double rho)
     }
 
     long targetPositions[2] = {rotSteps, inOutSteps};
-    multiStepper.moveTo(targetPositions);
-    multiStepper.runSpeedToPosition(); // Blocking call
+    // multiStepper.moveTo(targetPositions);
+    // multiStepper.runSpeedToPosition(); // Blocking call
 
     // Update current coordinates
     currentTheta = theta;
@@ -506,6 +364,6 @@ void interpolatePath(double startTheta, double startRho, double endTheta, double
         double interpolatedRho = startRho + t * (endRho - startRho);
 
         // Move to the interpolated theta-rho
-        movePolar(interpolatedTheta, interpolatedRho);
+        // movePolar(interpolatedTheta, interpolatedRho);
     }
 }
