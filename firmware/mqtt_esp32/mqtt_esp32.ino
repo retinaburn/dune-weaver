@@ -10,6 +10,8 @@ const char IP_ADDRESS[] = "10.42.0.1";
 const char TOPIC_IN[] = "sandtable/commands";
 const char TOPIC_OUT[] = "sandtable/response";
 
+char TO_SEND[256] = "";
+volatile bool SEND_MESSAGE = false;
 WiFiClient net;
 MQTTClient client(256);
 
@@ -77,6 +79,8 @@ void connect(){
     delay(1000);
   }
 
+  Serial.print("Subscribing to: ");
+  Serial.println(TOPIC_IN);
   bool isConnected = client.subscribe(TOPIC_IN);
   Serial.print("connected? ");
   Serial.println(isConnected);
@@ -89,6 +93,16 @@ void loop(){
   delay(10);
   if(!client.connected()){
     connect();
+  }
+  if (SEND_MESSAGE){
+    Serial.println(TO_SEND);
+    Serial.print("Sending to: ");
+    Serial.print(TOPIC_OUT);
+    Serial.print(" ");
+    Serial.println(TO_SEND);
+
+    client.publish("sandtable/response", "R\n", true, 2);
+    SEND_MESSAGE = false;
   }
 
 }
@@ -254,8 +268,8 @@ void messageReceived(String &topic, String &payload)
     // Process the buffer if a batch is ready
     if (batchComplete && bufferCount > 0)
     {
-        rotStepper.enableOutputs();
-        inOutStepper.enableOutputs();
+        // rotStepper.enableOutputs();
+        // inOutStepper.enableOutputs();
         // Start interpolation from the current position
         double startTheta = currentTheta;
         double startRho = currentRho;
@@ -291,14 +305,19 @@ void messageReceived(String &topic, String &payload)
 //         inOutStepper.disableOutputs();
         batchComplete = false; // Reset batch flag
         bufferCount = 0;       // Clear buffer
-        Serial.println("Bad R");
         send_and_log("R");
     }
 }
 
+void set_message_to_send(const char* message){
+  strncpy(TO_SEND,message,255);
+  TO_SEND[254] = '\n';
+  TO_SEND[255] = '\0';
+  SEND_MESSAGE = true;
+}
+
 void send_and_log(char message[]){
-  Serial.println(message);
-  client.publish(TOPIC_OUT, message);
+  set_message_to_send(message);
 }
 
 
