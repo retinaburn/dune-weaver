@@ -742,8 +742,9 @@ def delete_theta_rho_file():
 def move_to_center():
     """Move the sand table to the center position."""
     try:
-        if ser is None or not ser.is_open:
-            return jsonify({"success": False, "error": "Serial connection not established"}), 400
+        if (DELIVERY_METHOD == "serial"):
+            if ser is None or not ser.is_open:
+                return jsonify({"success": False, "error": "Serial connection not established"}), 400
 
         coordinates = [(0, 0)]  # Center position
         send_coordinate_batch(ser, coordinates)
