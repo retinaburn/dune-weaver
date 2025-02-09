@@ -343,6 +343,7 @@ def send_command(command):
     publish(command)
     print(f"Sent: {command}")
 
+    print("Waiting for response....")
     # Wait for "R" acknowledgment from Arduino
     while True:
         response = wait_for_ack()        
@@ -350,6 +351,7 @@ def send_command(command):
         if response == "R":
             print("Command execution completed.")
             break
+    print("Received response")
 
 def wait_for_start_time(schedule_hours):
     """
