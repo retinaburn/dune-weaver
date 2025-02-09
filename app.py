@@ -704,7 +704,7 @@ def stop_execution():
 def send_home():
     """Send the HOME command to the Arduino."""
     try:
-        send_command("HOME")
+        send_command("HOME\n")
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
