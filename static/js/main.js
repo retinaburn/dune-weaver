@@ -1492,10 +1492,14 @@ async function changeSpeed() {
         body: JSON.stringify({ speed })
     });
 
+    logMessage("Wating for response...");
     const result = await response.json();
+    logMessage("Response: " + JSON.stringify(result));
     if (result.success) {
+        logMessage("Success...");
         document.getElementById('speed_status').textContent = `Current Speed: ${speed}`;
         logMessage(`Speed set to: ${speed}`, LOG_TYPE.SUCCESS);
+        logMessage("Complete");
     } else {
         logMessage(`Failed to set speed: ${result.error}`, LOG_TYPE.ERROR);
     }
