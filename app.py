@@ -346,14 +346,10 @@ def send_command(command):
     print("Waiting for response....")
     # Wait for "R" acknowledgment from Arduino
     while True:
-        print("Waiting for ack")
         response = wait_for_ack()        
-        print("Got ack")
-        print(f"Arduino response: {response}")
         if response == "R":
             print("Command execution completed.")
             break
-    print("Received response")
 
 def wait_for_start_time(schedule_hours):
     """
@@ -791,9 +787,10 @@ def preview_thr():
 @app.route('/send_coordinate', methods=['POST'])
 def send_coordinate():
     """Send a single (theta, rho) coordinate to the Arduino."""
-    global ser
-    if ser is None or not ser.is_open:
-        return jsonify({"success": False, "error": "Serial connection not established"}), 400
+    if DELIVERY_METHOD == "serial":
+        global ser
+        if ser is None or not ser.is_open:
+            return jsonify({"success": False, "error": "Serial connection not established"}), 400
 
     try:
         data = request.json
