@@ -756,8 +756,9 @@ def move_to_center():
 def move_to_perimeter():
     """Move the sand table to the perimeter position."""
     try:
-        if ser is None or not ser.is_open:
-            return jsonify({"success": False, "error": "Serial connection not established"}), 400
+        if (DELIVERY_METHOD == "serial"):
+            if ser is None or not ser.is_open:
+                return jsonify({"success": False, "error": "Serial connection not established"}), 400
 
         MAX_RHO = 1
         coordinates = [(0, MAX_RHO)]  # Perimeter position
