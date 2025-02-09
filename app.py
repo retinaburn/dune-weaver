@@ -87,7 +87,6 @@ DELIVERY_METHOD = "mqtt" # or "serial"
 
 def publish(message, ser=None):
     if DELIVERY_METHOD == "mqtt":
-        message =
         mqtt.publish(TOPIC, message+"\n", qos=2)
         print(f"Sent: {len(message)} bytes")
     else:
@@ -107,6 +106,7 @@ def wait_for_ack():
                     if response == "R":
                         print("Command execution completed.")
                     return response
+                
 def wait_for_reset():
     if DELIVERY_METHOD == "mqtt":
         return "THETA_RESET"
@@ -345,13 +345,11 @@ def send_command(command):
 
     # Wait for "R" acknowledgment from Arduino
     while True:
-        with serial_lock:
-            if ser.in_waiting > 0:
-                response = ser.readline().decode().strip()
-                print(f"Arduino response: {response}")
-                if response == "R":
-                    print("Command execution completed.")
-                    break
+        response = wait_for_ack()        
+        print(f"Arduino response: {response}")
+        if response == "R":
+            print("Command execution completed.")
+            break
 
 def wait_for_start_time(schedule_hours):
     """
@@ -1105,9 +1103,10 @@ def run_playlist():
 @app.route('/set_speed', methods=['POST'])
 def set_speed():
     """Set the speed for the Arduino."""
-    global ser
-    if ser is None or not ser.is_open:
-        return jsonify({"success": False, "error": "Serial connection not established"}), 400
+    if (DELIVERY_METHOD == "serial"):
+        global ser
+        if ser is None or not ser.is_open:
+            return jsonify({"success": False, "error": "Serial connection not established"}), 400
 
     try:
         # Parse the speed value from the request
