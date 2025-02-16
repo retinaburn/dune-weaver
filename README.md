@@ -112,3 +112,18 @@ dune-weaver/
 ```
 
 **Happy sand drawing with Dune Weaver! 🌟**
+
+## Sample Grbl Commands
+```
+Go to perimeter 
+$J=G91 G21 Y20 F200.0
+
+Go to center 
+$J=G91 G21 Y-20 F200.0
+
+Do 1 rev 
+$J=G91 G21 X50 F200.0
+
+Do 1 rev the other direction 
+$J=G91 G21 X-50 F200.0
+```
