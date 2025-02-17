@@ -153,7 +153,7 @@ def interpolate_path(theta, rho):
     state.machine_x = new_x_abs
     state.machine_y = new_y_abs
     
-def reset_theta():
+def reset_theta(): 
     logger.info('Resetting Theta')
     state.current_theta = 0
     serial_manager.update_machine_position()
@@ -206,7 +206,7 @@ def run_theta_rho_file(file_path, schedule_hours=None):
                     estimated_remaining_time = pbar.format_dict['elapsed'] / i * total_coordinates
                     state.execution_progress = (i, total_coordinates, estimated_remaining_time)
 
-        serial_manager.check_idle()
+        serial_manager.wait_for_idle()
 
     state.current_playing_file = None
     state.execution_progress = None
@@ -287,6 +287,8 @@ def get_status():
         state.is_clearing = True
     else:
         state.is_clearing = False
+
+    serial_manager.check_idle()
 
     return {
         "ser_port": serial_manager.get_port(),
