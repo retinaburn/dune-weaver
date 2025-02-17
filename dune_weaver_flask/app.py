@@ -3,7 +3,7 @@ import atexit
 import os
 import logging
 from datetime import datetime
-from .modules.serial import serial_manager
+from .modules.telnet import telnet_manager as serial_manager
 from dune_weaver_flask.modules.core import pattern_manager
 from dune_weaver_flask.modules.core import playlist_manager
 from .modules.firmware import firmware_manager
@@ -12,7 +12,7 @@ from dune_weaver_flask.modules.core.state import state
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
@@ -21,6 +21,10 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+telnet = serial_manager.TelnetClient()
+logger.debug(f'Setting telnet client to {telnet}')
+serial_manager.set_client(telnet)
+logger.debug(f'Set telnet client to {telnet}')
 
 app = Flask(__name__)
 

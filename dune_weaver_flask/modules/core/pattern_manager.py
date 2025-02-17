@@ -5,7 +5,7 @@ import random
 import logging
 from datetime import datetime
 from tqdm import tqdm
-from dune_weaver_flask.modules.serial import serial_manager
+from dune_weaver_flask  .modules.telnet import telnet_manager as serial_manager
 from dune_weaver_flask.modules.core.state import state
 from math import pi
 
