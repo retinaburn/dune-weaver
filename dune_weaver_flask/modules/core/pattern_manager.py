@@ -126,20 +126,18 @@ def interpolate_path(theta, rho):
     
     delta_theta = theta - state.current_theta
     delta_rho = rho - state.current_rho
-    # x_increment = delta_theta / (2 * pi) * 100
-    x_increment = delta_theta / (4 * pi) * 100
-    y_increment = delta_rho * 100/5
 
     x_total_steps = 12800
     y_total_steps = 4640
     x_scaling_factor = 2
     y_scaling_factor = 5
-    gear_ratio = 100 / 16 / 2 # 100 teeth on the big gear, 16 teeth on the small gear, 2x microstepping
-    # x_increment * 0.35295131
-    offset = x_increment * (x_total_steps * x_scaling_factor / (gear_ratio * y_total_steps * y_scaling_factor))
 
-    # x_increment * 0.17655172
-    #offset = x_increment * (2560/4640/ (100 / 16 / 2)) # Total angular steps = 16000 / gear ratio = 10 / angular steps = 5750
+    x_increment = delta_theta * 100  / (2 * pi * x_scaling_factor)
+    y_increment = delta_rho * 100/ y_scaling_factor
+
+    gear_ratio = 100 / 16 / 2 # 100 teeth on the big gear, 16 teeth on the small gear, 2x microstepping
+
+    offset = x_increment * (x_total_steps * x_scaling_factor / (gear_ratio * y_total_steps * y_scaling_factor))
     y_increment -= offset
     
     new_x_abs = state.machine_x + x_increment
